@@ -40,7 +40,7 @@ func messageLoop() {
 
 		for _, u := range clients[m.Key()] {
 			fmt.Println("Writing message")
-			err := u.c.WriteMessage(websocket.TextMessage, []byte(m.String()))
+			err := u.c.WriteJSON(m)
 			if err != nil {
 				fmt.Println("error (sending message):", err)
 			}

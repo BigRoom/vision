@@ -6,11 +6,11 @@ import (
 )
 
 type MessageArgs struct {
-	From    string
-	Content string
-	Time    time.Time
-	Channel string
-	Host    string
+	From    string    `json:"from"`
+	Content string    `json:"content"`
+	Time    time.Time `json:"time"`
+	Channel string    `json:"channel"`
+	Host    string    `json:"host"`
 }
 
 func (args MessageArgs) Key() string {
