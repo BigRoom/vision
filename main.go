@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -8,7 +9,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var messages chan []byte
+var (
+	messages chan tunnel.MessageArgs
+	clients  map[string][]*conn
+)
 
 func main() {
 	var (
@@ -16,13 +20,31 @@ func main() {
 		port = "8080"
 	)
 
-	messages = make(chan []byte)
+	messages = make(chan tunnel.MessageArgs)
+	clients = make(map[string][]*conn)
 
 	go tunnel.NewRPCServer(messages, host, port)
+	go messageLoop()
 
 	http.HandleFunc("/", dispatchHandler)
 
 	log.Println(http.ListenAndServe("localhost:6060", nil))
+}
+
+func messageLoop() {
+	for {
+		log.Println("Waiting on message...")
+		m := <-messages
+		fmt.Println("Got message")
+
+		for _, u := range clients[m.Key()] {
+			fmt.Println("Writing message")
+			err := u.c.WriteMessage(websocket.TextMessage, []byte(m.String()))
+			if err != nil {
+				fmt.Println("error (sending message):", err)
+			}
+		}
+	}
 }
 
 var upgrader = websocket.Upgrader{
@@ -42,11 +64,28 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer c.Close()
 
-	for {
-		err = c.WriteMessage(websocket.TextMessage, <-messages)
-
-		if err != nil {
-			log.Println("error:", err)
-		}
+	user := &conn{
+		c: c,
 	}
+
+	for {
+		_, message, err := user.c.ReadMessage()
+		if err != nil {
+			log.Println("error reading:", err)
+			return
+		}
+
+		msg := string(message)
+		if msg[:3] == "SET" {
+			log.Println("Adding user to channel")
+			channel := msg[3:]
+			clients[channel] = append(clients[channel], user)
+		}
+
+	}
+}
+
+type conn struct {
+	c        *websocket.Conn
+	channels []string
 }

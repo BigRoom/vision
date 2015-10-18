@@ -8,7 +8,7 @@ import (
 	"net/rpc"
 )
 
-func NewRPCServer(dispatch chan []byte, host, port string) {
+func NewRPCServer(dispatch chan MessageArgs, host, port string) {
 	msg := &Message{
 		dispatch,
 	}
