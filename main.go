@@ -70,23 +70,26 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		_, message, err := user.c.ReadMessage()
+		var a action
+		err := user.c.ReadJSON(&a)
 		if err != nil {
 			log.Println("error reading:", err)
 			return
 		}
 
-		msg := string(message)
-		if msg[:3] == "SET" {
-			channel := msg[3:]
-			log.Printf("Adding user to channel %v", channel)
-			clients[channel] = append(clients[channel], user)
+		if a.Name == "SET" {
+			log.Println("User joined channel", a.Message)
+			clients[a.Message] = append(clients[a.Message], user)
 		}
-
 	}
 }
 
 type conn struct {
 	c        *websocket.Conn
 	channels []string
+}
+
+type action struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
 }
