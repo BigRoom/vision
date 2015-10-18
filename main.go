@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bigrooms/vision/tunnel"
+	"github.com/bigroom/vision/tunnel"
 	"github.com/gorilla/websocket"
 )
 
