@@ -35,7 +35,8 @@ func messageLoop() {
 	for {
 		log.Println("Waiting on message...")
 		m := <-messages
-		fmt.Println("Got message")
+		log.Println("Got message")
+		log.Printf("Sending to channel with key: %v", m.Key())
 
 		for _, u := range clients[m.Key()] {
 			fmt.Println("Writing message")
@@ -77,8 +78,8 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 
 		msg := string(message)
 		if msg[:3] == "SET" {
-			log.Println("Adding user to channel")
 			channel := msg[3:]
+			log.Printf("Adding user to channel %v", channel)
 			clients[channel] = append(clients[channel], user)
 		}
 
