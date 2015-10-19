@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 
 	"github.com/bigroom/vision/tunnel"
 	"github.com/gorilla/websocket"
 	"github.com/nickvanw/ircx"
+	"github.com/sorcix/irc"
 )
 
 var (
@@ -66,9 +68,26 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer c.Close()
 
-	user := &conn{
-		c: c,
+	zombie := ircx.Classic("chat.freenode.net:6667", fmt.Sprintf("roombot%v", rand.Intn(999)))
+	if err != nil {
+		log.Println("Could not connect to IRC")
 	}
+
+	if err := zombie.Connect(); err != nil {
+		log.Println("Unable to connect to IRC", err)
+	}
+
+	user := &conn{
+		c:        c,
+		irc:      zombie,
+		messages: make(chan string),
+	}
+
+	zombie.HandleFunc(irc.PING, user.pingHandler)
+	zombie.HandleFunc(irc.RPL_WELCOME, user.registerHandler)
+	zombie.HandleFunc(irc.JOIN, user.messageHandler)
+
+	go zombie.HandleLoop()
 
 	for {
 		var a action
@@ -83,18 +102,52 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 			clients[a.Message] = append(clients[a.Message], user)
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%s' to channel '%s'", a.Message, a.Channel)
+			user.messages <- a.Message
 		}
 
 	}
 }
 
 type conn struct {
-	c   *websocket.Conn
-	irc *ircx.Bot
+	c        *websocket.Conn
+	irc      *ircx.Bot
+	messages chan string
 }
 
 type action struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
 	Channel string `json:"channel"`
+}
+
+func (c *conn) messageHandler(s ircx.Sender, m *irc.Message) {
+	go func() {
+		for {
+			log.Println("Waiting for message")
+			msg := <-c.messages
+			log.Println("Got message", msg)
+			s.Send(&irc.Message{
+				Command:  irc.PRIVMSG,
+				Params:   []string{"#roomtest"},
+				Trailing: msg,
+			})
+			log.Println("Message sent")
+		}
+	}()
+}
+
+func (c *conn) registerHandler(s ircx.Sender, m *irc.Message) {
+	log.Println("Registering")
+	s.Send(&irc.Message{
+		Command: irc.JOIN,
+		Params:  []string{"#roomtest"},
+	})
+}
+
+func (c *conn) pingHandler(s ircx.Sender, m *irc.Message) {
+	s.Send(&irc.Message{
+		Command:  irc.PONG,
+		Params:   m.Params,
+		Trailing: m.Trailing,
+	})
 }
