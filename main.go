@@ -7,6 +7,7 @@ import (
 
 	"github.com/bigroom/vision/tunnel"
 	"github.com/gorilla/websocket"
+	"github.com/nickvanw/ircx"
 )
 
 var (
@@ -80,16 +81,20 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 		if a.Name == "SET" {
 			log.Println("User joined channel", a.Message)
 			clients[a.Message] = append(clients[a.Message], user)
+		} else if a.Name == "SEND" {
+			log.Printf("Sending message '%s' to channel '%s'", a.Message, a.Channel)
 		}
+
 	}
 }
 
 type conn struct {
-	c        *websocket.Conn
-	channels []string
+	c   *websocket.Conn
+	irc *ircx.Bot
 }
 
 type action struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
+	Channel string `json:"channel"`
 }
