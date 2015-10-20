@@ -91,6 +91,9 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%s' to channel '%s'", a.Message, a.Channel)
 			user.Messages <- a.Message
+		} else if a.Name == "NICK" {
+			log.Printf("Changing nick to '%v'", a.Message)
+			user.SetNick(a.Message)
 		}
 	}
 }
