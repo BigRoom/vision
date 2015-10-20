@@ -38,8 +38,7 @@ func messageLoop() {
 	for {
 		log.Println("Waiting on message...")
 		m := <-messages
-		log.Println("Got message")
-		log.Printf("Sending to channel with key: %v", m.Key())
+		log.Printf("Dispatching message '%v' to channel with key: '%v'", m.Content, m.Key())
 
 		for _, u := range clients[m.Key()] {
 			fmt.Println("Writing message")
@@ -68,26 +67,16 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer c.Close()
 
-	zombie := ircx.Classic("chat.freenode.net:6667", fmt.Sprintf("roombot%v", rand.Intn(999)))
+	server := r.FormValue("server")
+	if server == "" {
+		server = "chat.freenode.net:6667"
+	}
+
+	user, err := newConnection(server, fmt.Sprintf("roombot%v", rand.Intn(999)), c)
 	if err != nil {
-		log.Println("Could not connect to IRC")
+		log.Println("couldnt create connection", err)
+		return
 	}
-
-	if err := zombie.Connect(); err != nil {
-		log.Println("Unable to connect to IRC", err)
-	}
-
-	user := &conn{
-		c:        c,
-		irc:      zombie,
-		messages: make(chan string),
-	}
-
-	zombie.HandleFunc(irc.PING, user.pingHandler)
-	zombie.HandleFunc(irc.RPL_WELCOME, user.registerHandler)
-	zombie.HandleFunc(irc.JOIN, user.messageHandler)
-
-	go zombie.HandleLoop()
 
 	for {
 		var a action
@@ -108,16 +97,52 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type conn struct {
-	c        *websocket.Conn
-	irc      *ircx.Bot
-	messages chan string
-}
-
 type action struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
 	Channel string `json:"channel"`
+}
+
+func newConnection(server, nick string, c *websocket.Conn) (*conn, error) {
+	fmt.Println("Connecting to server", server)
+	zombie := ircx.Classic(server, nick)
+
+	if err := zombie.Connect(); err != nil {
+		return nil, err
+	}
+
+	user := &conn{
+		c:        c,
+		irc:      zombie,
+		messages: make(chan string),
+		server:   server,
+		nick:     nick,
+	}
+
+	zombie.HandleFunc(irc.PING, user.pingHandler)
+	zombie.HandleFunc(irc.RPL_WELCOME, user.registerHandler)
+	zombie.HandleFunc(irc.JOIN, user.messageHandler)
+
+	go zombie.HandleLoop()
+
+	return user, nil
+}
+
+type conn struct {
+	c        *websocket.Conn
+	irc      *ircx.Bot
+	messages chan string
+	nick     string
+	server   string
+}
+
+func (c *conn) changeNick(name string) {
+	c.nick = name
+
+	c.irc.Sender.Send(&irc.Message{
+		Command: irc.NICK,
+		Params:  []string{c.nick},
+	})
 }
 
 func (c *conn) messageHandler(s ircx.Sender, m *irc.Message) {
@@ -125,7 +150,7 @@ func (c *conn) messageHandler(s ircx.Sender, m *irc.Message) {
 		for {
 			log.Println("Waiting for message")
 			msg := <-c.messages
-			log.Println("Got message", msg)
+			log.Printf("Got message '%v'", msg)
 			s.Send(&irc.Message{
 				Command:  irc.PRIVMSG,
 				Params:   []string{"#roomtest"},
