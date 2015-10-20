@@ -7,14 +7,13 @@ import (
 	"net/http"
 
 	"github.com/bigroom/vision/tunnel"
+	"github.com/bigroom/zombies"
 	"github.com/gorilla/websocket"
-	"github.com/nickvanw/ircx"
-	"github.com/sorcix/irc"
 )
 
 var (
 	messages chan tunnel.MessageArgs
-	clients  map[string][]*conn
+	clients  map[string][]*zombies.Zombie
 )
 
 func main() {
@@ -24,7 +23,7 @@ func main() {
 	)
 
 	messages = make(chan tunnel.MessageArgs)
-	clients = make(map[string][]*conn)
+	clients = make(map[string][]*zombies.Zombie)
 
 	go tunnel.NewRPCServer(messages, host, port)
 	go messageLoop()
@@ -42,7 +41,7 @@ func messageLoop() {
 
 		for _, u := range clients[m.Key()] {
 			fmt.Println("Writing message")
-			err := u.c.WriteJSON(m)
+			err := u.WSConn.WriteJSON(m)
 			if err != nil {
 				fmt.Println("error (sending message):", err)
 			}
@@ -72,7 +71,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 		server = "chat.freenode.net:6667"
 	}
 
-	user, err := newConnection(server, fmt.Sprintf("roombot%v", rand.Intn(999)), c)
+	user, err := zombies.New(server, fmt.Sprintf("roombot%v", rand.Intn(9999)), c)
 	if err != nil {
 		log.Println("couldnt create connection", err)
 		return
@@ -80,7 +79,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		var a action
-		err := user.c.ReadJSON(&a)
+		err := user.WSConn.ReadJSON(&a)
 		if err != nil {
 			log.Println("error reading:", err)
 			return
@@ -91,9 +90,8 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 			clients[a.Message] = append(clients[a.Message], user)
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%s' to channel '%s'", a.Message, a.Channel)
-			user.messages <- a.Message
+			user.Messages <- a.Message
 		}
-
 	}
 }
 
@@ -101,78 +99,4 @@ type action struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
 	Channel string `json:"channel"`
-}
-
-func newConnection(server, nick string, c *websocket.Conn) (*conn, error) {
-	fmt.Println("Connecting to server", server)
-	zombie := ircx.Classic(server, nick)
-
-	if err := zombie.Connect(); err != nil {
-		return nil, err
-	}
-
-	user := &conn{
-		c:        c,
-		irc:      zombie,
-		messages: make(chan string),
-		server:   server,
-		nick:     nick,
-	}
-
-	zombie.HandleFunc(irc.PING, user.pingHandler)
-	zombie.HandleFunc(irc.RPL_WELCOME, user.registerHandler)
-	zombie.HandleFunc(irc.JOIN, user.messageHandler)
-
-	go zombie.HandleLoop()
-
-	return user, nil
-}
-
-type conn struct {
-	c        *websocket.Conn
-	irc      *ircx.Bot
-	messages chan string
-	nick     string
-	server   string
-}
-
-func (c *conn) changeNick(name string) {
-	c.nick = name
-
-	c.irc.Sender.Send(&irc.Message{
-		Command: irc.NICK,
-		Params:  []string{c.nick},
-	})
-}
-
-func (c *conn) messageHandler(s ircx.Sender, m *irc.Message) {
-	go func() {
-		for {
-			log.Println("Waiting for message")
-			msg := <-c.messages
-			log.Printf("Got message '%v'", msg)
-			s.Send(&irc.Message{
-				Command:  irc.PRIVMSG,
-				Params:   []string{"#roomtest"},
-				Trailing: msg,
-			})
-			log.Println("Message sent")
-		}
-	}()
-}
-
-func (c *conn) registerHandler(s ircx.Sender, m *irc.Message) {
-	log.Println("Registering")
-	s.Send(&irc.Message{
-		Command: irc.JOIN,
-		Params:  []string{"#roomtest"},
-	})
-}
-
-func (c *conn) pingHandler(s ircx.Sender, m *irc.Message) {
-	s.Send(&irc.Message{
-		Command:  irc.PONG,
-		Params:   m.Params,
-		Trailing: m.Trailing,
-	})
 }
