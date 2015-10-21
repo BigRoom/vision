@@ -18,7 +18,7 @@ var (
 
 func main() {
 	var (
-		host = "localhost"
+		host = "0.0.0.0"
 		port = "8080"
 	)
 
@@ -30,7 +30,7 @@ func main() {
 
 	http.HandleFunc("/", dispatchHandler)
 
-	log.Println(http.ListenAndServe("localhost:6060", nil))
+	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 }
 
 func messageLoop() {
