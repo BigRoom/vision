@@ -4,6 +4,11 @@ MAINTAINER Harrison Shoebridge <harrison@theshoebridges.com>
 
 RUN go get github.com/bigroom/zombies
 RUN go get github.com/gorilla/websocket
+RUN go get github.com/paked/gerrycode/communicator
+RUN go get github.com/paked/configure
+RUN go get github.com/paked/restrict
+RUN go get gopkg.in/mgutz/dat.v1
+RUN go get gopkg.in/mgutz/dat.v1/sqlx-runner
 
 RUN go get github.com/codegangsta/gin
 
