@@ -60,6 +60,8 @@ func main() {
 
 	r.HandleFunc("/users", registerHandler).
 		Methods("POST")
+	r.HandleFunc("/users", loginHandler).
+		Methods("GET")
 
 	http.Handle("/", r)
 
