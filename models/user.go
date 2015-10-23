@@ -46,14 +46,14 @@ func NewUser(username, password, email string) (User, error) {
 	return u, err
 }
 
-// FetchUser retrieves a user by its username
-func FetchUser(username string) (User, error) {
+// FetchUser retrieves a user given a value and key
+func FetchUser(key string, value interface{}) (User, error) {
 	var u User
 
 	err := DB.
 		Select("*").
 		From("users").
-		Where("username = $1", username).
+		Where(key+" = $1", value).
 		QueryStruct(&u)
 
 	return u, err
