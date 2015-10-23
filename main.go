@@ -7,6 +7,7 @@ import (
 	"github.com/bigroom/vision/models"
 	"github.com/bigroom/vision/tunnel"
 	"github.com/bigroom/zombies"
+	"github.com/gorilla/mux"
 	"github.com/paked/configure"
 	"github.com/paked/restrict"
 )
@@ -53,7 +54,14 @@ func main() {
 	go tunnel.NewRPCServer(messages, host, port)
 	go messageLoop()
 
-	http.HandleFunc("/", dispatchHandler)
+	r := mux.NewRouter()
+
+	r.HandleFunc("/ws", dispatchHandler)
+
+	r.HandleFunc("/users", registerHandler).
+		Methods("POST")
+
+	http.Handle("/", r)
 
 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 }
