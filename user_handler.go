@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bigroom/vision/models"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/paked/gerrycode/communicator"
 	"github.com/paked/restrict"
 )
@@ -31,7 +32,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	u, err := models.FetchUser(username)
+	u, err := models.FetchUser("username", username)
 	if err != nil {
 		coms.Error("Unable to create user")
 		return
@@ -53,4 +54,16 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	coms.OKWithData("token", ts)
+}
+
+func secretHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
+	coms := communicator.New(w)
+
+	u, err := models.FetchUser("id", t.Claims["id"])
+	if err != nil {
+		coms.Error("That user does not exist!")
+		return
+	}
+
+	coms.OKWithData("ID", u)
 }

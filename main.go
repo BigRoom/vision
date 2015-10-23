@@ -63,6 +63,9 @@ func main() {
 	r.HandleFunc("/users", loginHandler).
 		Methods("GET")
 
+	r.HandleFunc("/users/me", restrict.R(secretHandler)).
+		Methods("GET")
+
 	http.Handle("/", r)
 
 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
