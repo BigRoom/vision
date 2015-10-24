@@ -57,8 +57,6 @@ func main() {
 
 	r := mux.NewRouter()
 
-	// r.HandleFunc("/ws", restrict.R(dispatchHandler))
-
 	r.HandleFunc("/users", registerHandler).
 		Methods("POST")
 	r.HandleFunc("/users", loginHandler).
@@ -67,9 +65,28 @@ func main() {
 	r.HandleFunc("/users/me", restrict.R(secretHandler)).
 		Methods("GET")
 
-	http.Handle("/", r)
+	http.Handle("/", &server{r})
 
 	http.HandleFunc("/ws", restrict.R(dispatchHandler))
 
 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+}
+
+type server struct {
+	r *mux.Router
+}
+
+func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if origin := r.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	}
+
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s.r.ServeHTTP(w, r)
 }

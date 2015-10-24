@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -16,9 +18,11 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	email := r.FormValue("email")
+	fmt.Println(username, password, email)
 
 	u, err := models.NewUser(username, password, email)
 	if err != nil {
+		log.Println(err)
 		coms.Error("Unable to create user")
 		return
 	}
@@ -27,8 +31,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	coms := communicator.New(w)
 
 	username := r.FormValue("username")
@@ -36,7 +38,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	u, err := models.FetchUser("username", username)
 	if err != nil {
-		coms.Error("Unable to create user")
+		coms.Error("Unable to login user")
 		return
 	}
 
