@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 
-	// "github.com/bigroom/vision/models"
+	"github.com/bigroom/vision/models"
 	"github.com/bigroom/zombies"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
@@ -35,6 +34,12 @@ var upgrader = websocket.Upgrader{
 func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 	fmt.Println(t.Claims["id"])
 
+	u, err := models.FetchUser("id", t.Claims["id"])
+	if err != nil {
+		log.Println("COuldnt get user")
+		return
+	}
+
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("couldn't upgrade:", err)
@@ -48,7 +53,20 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		server = "chat.freenode.net:6667"
 	}
 
-	user, err := zombies.New(server, fmt.Sprintf("%v%v", "uUsername", rand.Intn(9999)), c)
+	var user *zombies.Zombie
+
+	if bath.Exists(u.ID) {
+		log.Println("Reviving zombie")
+		user, err = bath.Revive(u.ID, *c)
+	} else {
+		log.Println("Creating zombie")
+		user, err = bath.New(u.ID,
+			server,
+			u.Username,
+			c,
+		)
+	}
+
 	if err != nil {
 		log.Println("couldnt create connection", err)
 		return
@@ -64,7 +82,18 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 		if a.Name == "SET" {
 			log.Println("User joined channel", a.Message)
-			clients[a.Message] = append(clients[a.Message], user)
+
+			// Prevent duplicate users
+			add := true
+			for _, client := range clients[a.Message] {
+				if client == user {
+					add = false
+				}
+			}
+
+			if add {
+				clients[a.Message] = append(clients[a.Message], user)
+			}
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%s' to channel '%s'", a.Message, a.Channel)
 			user.Messages <- a.Message

@@ -16,6 +16,7 @@ var (
 	messages chan tunnel.MessageArgs
 	clients  map[string][]*zombies.Zombie
 
+	bath = zombies.New()
 	conf = configure.New()
 
 	dbName    = conf.String("db-name", "postgres", "DB_NAME")
