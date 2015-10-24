@@ -56,7 +56,7 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/ws", dispatchHandler)
+	// r.HandleFunc("/ws", restrict.R(dispatchHandler))
 
 	r.HandleFunc("/users", registerHandler).
 		Methods("POST")
@@ -67,6 +67,8 @@ func main() {
 		Methods("GET")
 
 	http.Handle("/", r)
+
+	http.HandleFunc("/ws", restrict.R(dispatchHandler))
 
 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 }

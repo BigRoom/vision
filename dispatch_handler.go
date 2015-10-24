@@ -6,7 +6,9 @@ import (
 	"math/rand"
 	"net/http"
 
+	// "github.com/bigroom/vision/models"
 	"github.com/bigroom/zombies"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
 )
 
@@ -30,10 +32,8 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func dispatchHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Add("Access-Control-Allow-Methods", "PUT")
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
+	fmt.Println(t.Claims["id"])
 
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -48,7 +48,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request) {
 		server = "chat.freenode.net:6667"
 	}
 
-	user, err := zombies.New(server, fmt.Sprintf("roombot%v", rand.Intn(9999)), c)
+	user, err := zombies.New(server, fmt.Sprintf("%v%v", "uUsername", rand.Intn(9999)), c)
 	if err != nil {
 		log.Println("couldnt create connection", err)
 		return
