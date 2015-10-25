@@ -55,7 +55,10 @@ func main() {
 	go tunnel.NewRPCServer(messages, host, port)
 	go messageLoop()
 
-	r := mux.NewRouter()
+	r := mux.NewRouter().
+		PathPrefix("/api").
+		Subrouter().
+		StrictSlash(true)
 
 	r.HandleFunc("/users", registerHandler).
 		Methods("POST")
@@ -65,9 +68,9 @@ func main() {
 	r.HandleFunc("/users/me", restrict.R(secretHandler)).
 		Methods("GET")
 
-	http.Handle("/", &server{r})
+	r.HandleFunc("/ws", restrict.R(dispatchHandler))
 
-	http.HandleFunc("/ws", restrict.R(dispatchHandler))
+	http.Handle("/", &server{r})
 
 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 }
