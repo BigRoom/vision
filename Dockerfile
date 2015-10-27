@@ -17,6 +17,8 @@ RUN go get github.com/codegangsta/gin
 
 RUN go get github.com/bigroom/vision
 
+RUN go get golang.org/x/crypto/bcrypt
+
 # ADD . /go/src/github.com/bigroom/vision
 # ADD ./models/ /go/src/github.com/bigroom/vision/models
 # ADD ./tunnel/ /go/src/github.com/bigroom/vision/tunnel

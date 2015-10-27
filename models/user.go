@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // User is someone with an account on Big Room
@@ -27,10 +28,15 @@ func NewUser(username, password, email string) (User, error) {
 		return u, errors.New("That user already exists")
 	}
 
+	pass, err := bcrypt.GenerateFromPassword([]byte(password), 20)
+	if err != nil {
+		return u, err
+	}
+
 	err = DB.
 		InsertInto("users").
 		Columns("username", "password", "email").
-		Values(username, password, email).
+		Values(username, string(pass), email).
 		Returning("*").
 		QueryStruct(&u)
 
@@ -60,11 +66,6 @@ func FetchUser(key string, value interface{}) (User, error) {
 }
 
 // Login verifies that the provided password is correct
-//	TODO Implement bcrypt authentication
 func (u User) Login(password string) bool {
-	if u.Password == password {
-		return true
-	}
-
-	return false
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil
 }
