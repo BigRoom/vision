@@ -25,5 +25,5 @@ RUN go get golang.org/x/crypto/bcrypt
 
 WORKDIR /go/src/github.com/bigroom/vision
 
-#jCMD go build && ./vision
+# CMD go build && ./vision
 CMD gin -i -a=8080 -b="vision"

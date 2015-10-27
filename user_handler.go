@@ -42,8 +42,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !u.Login(password) {
-		coms.Error("Unable to login")
+	if err := u.Login(password); err != nil {
+		coms.Error("Unable to login " + fmt.Sprintf("%v", err))
 		return
 	}
 

@@ -28,7 +28,7 @@ func NewUser(username, password, email string) (User, error) {
 		return u, errors.New("That user already exists")
 	}
 
-	pass, err := bcrypt.GenerateFromPassword([]byte(password), 20)
+	pass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return u, err
 	}
@@ -66,6 +66,6 @@ func FetchUser(key string, value interface{}) (User, error) {
 }
 
 // Login verifies that the provided password is correct
-func (u User) Login(password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil
+func (u User) Login(password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 }
