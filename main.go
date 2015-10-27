@@ -25,6 +25,8 @@ var (
 	dbService = conf.String("db-service", "jarvis", "DB_SERVICE")
 	dbPort    = conf.String("db-port", "5432", "DB_PORT")
 
+	defaultIRCServer = conf.String("default-irc", "chat.freenode.net", "default IRC host")
+
 	crypto = conf.String("crypto", "/crypto/app.rsa", "Your crypto")
 )
 
@@ -62,10 +64,14 @@ func main() {
 
 	r.HandleFunc("/users", registerHandler).
 		Methods("POST")
+
 	r.HandleFunc("/users", loginHandler).
 		Methods("GET")
 
 	r.HandleFunc("/users/me", restrict.R(secretHandler)).
+		Methods("GET")
+
+	r.HandleFunc("/servers/default", defaultServerHandler).
 		Methods("GET")
 
 	r.HandleFunc("/ws", restrict.R(dispatchHandler))
