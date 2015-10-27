@@ -15,10 +15,10 @@ RUN go get github.com/nickvanw/ircx
 
 RUN go get github.com/codegangsta/gin
 
-RUN go get github.com/bigroom/vision
-RUN go get github.com/bigroom/vision/models
-RUN go get github.com/bigroom/vision/tunnel
-RUN go get github.com/bigroom/zombies
+# RUN go get github.com/bigroom/vision
+# RUN go get github.com/bigroom/vision/models
+# RUN go get github.com/bigroom/vision/tunnel
+# RUN go get github.com/bigroom/zombies
 
 # ADD . /go/src/github.com/bigroom/vision
 # ADD ./models/ /go/src/github.com/bigroom/vision/models
@@ -26,4 +26,5 @@ RUN go get github.com/bigroom/zombies
 
 WORKDIR /go/src/github.com/bigroom/vision
 
+#jCMD go build && ./vision
 CMD gin -i -a=8080 -b="vision"
