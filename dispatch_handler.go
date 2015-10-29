@@ -30,8 +30,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
-	fmt.Println(t.Claims["id"])
-
+	log.Println("Dispatching")
 	u, err := models.FetchUser("id", t.Claims["id"])
 	if err != nil {
 		log.Println("COuldnt get user")
@@ -51,14 +50,14 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		server = "chat.freenode.net:6667"
 	}
 
-	if false {
-		/*
-			log.Println("Reviving zombie")
-			user, err = bath.Revive(u.ID, *c)
-		*/
-		fmt.Println("failing because not implemented")
+	log.Println("gets to here")
+	resp, err := pool.Tell("exists", u.ID)
+	if err != nil {
+		log.Fatal("error getting exists:", err)
 		return
-	} else {
+	}
+
+	if !resp.MustBool() {
 		log.Println("Creating zombie")
 		add := zombies.Add{
 			ID:     u.ID,
@@ -66,17 +65,11 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			Server: server,
 		}
 
-		resp, err := pool.Tell("add", add)
+		_, err := pool.Tell("add", add)
 		if err != nil {
-			panic(err)
+			log.Fatal("error creating:", err)
+			return
 		}
-
-		log.Println(resp)
-	}
-
-	if err != nil {
-		log.Println("couldnt create connection", err)
-		return
 	}
 
 	for {
@@ -100,21 +93,10 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 				return
 			}
 
-			// Prevent duplicate users
-			add := true
-			for _, client := range clients[a.Message] {
-				if client.id == u.ID {
-					add = false
-					break
-				}
-			}
-
-			if add {
-				clients[a.Message] = append(clients[a.Message], &conn{
-					c:  c,
-					id: u.ID,
-				})
-			}
+			clients[a.Message] = append(clients[a.Message], &conn{
+				c:  c,
+				id: u.ID,
+			})
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%v' to channel '%v'", a.Message, a.Channel)
 			_, err := pool.Tell("send", zombies.Send{
