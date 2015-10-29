@@ -7,7 +7,6 @@ import (
 
 	"github.com/bigroom/vision/models"
 	"github.com/bigroom/vision/tunnel"
-	"github.com/bigroom/zombies"
 	"github.com/gorilla/mux"
 	"github.com/koding/kite"
 	"github.com/paked/configure"
@@ -16,9 +15,8 @@ import (
 
 var (
 	messages chan tunnel.MessageArgs
-	clients  map[string][]*zombies.Zombie
+	clients  map[string][]*conn
 
-	bath = zombies.New()
 	conf = configure.New()
 
 	dbName    = conf.String("db-name", "postgres", "DB_NAME")
@@ -56,7 +54,7 @@ func main() {
 	)
 
 	messages = make(chan tunnel.MessageArgs)
-	clients = make(map[string][]*zombies.Zombie)
+	clients = make(map[string][]*conn)
 
 	go tunnel.NewRPCServer(messages, host, port)
 	go messageLoop()

@@ -12,6 +12,17 @@ import (
 )
 
 func messageLoop() {
+	for {
+		log.Println("Waiting for message...")
+		m := <-messages
+		log.Printf("Dispatching message '%v' to channel with key: '%v'", m.Content, m.Key())
+		for _, client := range clients[m.Key()] {
+			err := client.c.WriteJSON(m)
+			if err != nil {
+				fmt.Println("error sending message:", err)
+			}
+		}
+	}
 	/*
 		for {
 			log.Println("Waiting on message...")
@@ -56,7 +67,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		server = "chat.freenode.net:6667"
 	}
 
-	if bath.Exists(u.ID) {
+	if false {
 		/*
 			log.Println("Reviving zombie")
 			user, err = bath.Revive(u.ID, *c)
@@ -110,6 +121,22 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 				log.Println("Closing connection. Error joining chanel:", err)
 				return
 			}
+
+			// Prevent duplicate users
+			add := true
+			for _, client := range clients[a.Message] {
+				if client.id == u.ID {
+					add = false
+					break
+				}
+			}
+
+			if add {
+				clients[a.Message] = append(clients[a.Message], &conn{
+					c:  c,
+					id: u.ID,
+				})
+			}
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%v' to channel '%v'", a.Message, a.Channel)
 			_, err := pool.Tell("send", zombies.Send{
@@ -161,4 +188,9 @@ type action struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
 	Channel string `json:"channel"`
+}
+
+type conn struct {
+	id int64
+	c  *websocket.Conn
 }
