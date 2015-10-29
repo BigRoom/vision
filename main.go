@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/bigroom/vision/models"
 	"github.com/bigroom/vision/tunnel"
 	"github.com/bigroom/zombies"
 	"github.com/gorilla/mux"
+	"github.com/koding/kite"
 	"github.com/paked/configure"
 	"github.com/paked/restrict"
 )
@@ -28,6 +30,8 @@ var (
 	defaultIRCServer = conf.String("default-irc", "chat.freenode.net", "default IRC host")
 
 	crypto = conf.String("crypto", "/crypto/app.rsa", "Your crypto")
+
+	pool *kite.Client
 )
 
 func main() {
@@ -77,6 +81,23 @@ func main() {
 	r.HandleFunc("/ws", restrict.R(dispatchHandler))
 
 	http.Handle("/", &server{r})
+
+	k := kite.New("vision", "1.0.0")
+
+	url := "http://" + os.Getenv("POOL_PORT_3001_TCP_ADDR") + ":3001/kite"
+	log.Println("Got URL", url)
+
+	pool = k.NewClient(url)
+	go func() {
+		connected, err := pool.DialForever()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		<-connected
+
+		log.Println("Connected!")
+	}()
 
 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 }

@@ -19,6 +19,8 @@ RUN go get github.com/bigroom/vision
 
 RUN go get golang.org/x/crypto/bcrypt
 
+RUN go get github.com/koding/kite
+
 # ADD . /go/src/github.com/bigroom/vision
 # ADD ./models/ /go/src/github.com/bigroom/vision/models
 # ADD ./tunnel/ /go/src/github.com/bigroom/vision/tunnel

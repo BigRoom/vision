@@ -65,6 +65,19 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			u.Username,
 			c,
 		)
+
+		add := zombies.Add{
+			ID:     u.ID,
+			Nick:   u.Username,
+			Server: server,
+		}
+
+		resp, err := pool.Tell("add", add)
+		if err != nil {
+			panic(err)
+		}
+
+		log.Println(resp)
 	}
 
 	if err != nil {
