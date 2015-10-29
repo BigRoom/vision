@@ -17,7 +17,11 @@ func messageLoop() {
 		m := <-messages
 		log.Printf("Dispatching message '%v' to channel with key: '%v'", m.Content, m.Key())
 		for _, client := range clients[m.Key()] {
-			err := client.c.WriteJSON(m)
+			err := client.c.WriteJSON(response{
+				Name:     "MESSAGE",
+				Contents: m,
+			})
+
 			if err != nil {
 				fmt.Println("error sending message:", err)
 			}
@@ -50,7 +54,6 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		server = "chat.freenode.net:6667"
 	}
 
-	log.Println("gets to here")
 	resp, err := pool.Tell("exists", u.ID)
 	if err != nil {
 		log.Fatal("error getting exists:", err)
@@ -109,6 +112,26 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 				log.Println("Closing connection. Error sending message:", err)
 				return
 			}
+		} else if a.Name == "CHANNELS" {
+			log.Println("Sending channels to user")
+
+			resp, err := pool.Tell("channels", u.ID)
+			if err != nil {
+				log.Println("Closing connection. Could not connect to kite: ", err)
+				return
+			}
+
+			var channels zombies.Channels
+			resp.MustUnmarshal(&channels)
+
+			err = c.WriteJSON(response{
+				Contents: channels.Channels,
+				Name:     "CHANNELS",
+			})
+
+			if err != nil {
+				log.Println("Coudlnt wirte JSON")
+			}
 		}
 	}
 }
@@ -122,4 +145,9 @@ type action struct {
 type conn struct {
 	id int64
 	c  *websocket.Conn
+}
+
+type response struct {
+	Name     string      `json:"name"`
+	Contents interface{} `json:"contents"`
 }
