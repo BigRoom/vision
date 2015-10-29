@@ -23,22 +23,6 @@ func messageLoop() {
 			}
 		}
 	}
-	/*
-		for {
-			log.Println("Waiting on message...")
-			m := <-messages
-			log.Printf("Dispatching message '%v' to channel with key: '%v'", m.Content, m.Key())
-			for _, u := range clients[m.Key()] {
-				fmt.Println("Writing message")
-
-					err := u.WSConn.WriteJSON(m)
-					if err != nil {
-						fmt.Println("error (sending message):", err)
-					}
-			}
-		}
-
-	*/
 }
 
 var upgrader = websocket.Upgrader{
@@ -76,12 +60,6 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		return
 	} else {
 		log.Println("Creating zombie")
-		/*user, err = bath.New(u.ID,
-			server,
-			u.Username,
-			c,
-		)*/
-
 		add := zombies.Add{
 			ID:     u.ID,
 			Nick:   u.Username,
@@ -151,37 +129,6 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			}
 		}
 	}
-	/*
-		for {
-			var a action
-			err := user.WSConn.ReadJSON(&a)
-			if err != nil {
-				log.Println("error reading:", err)
-				return
-			}
-
-			if a.Name == "SET" {
-				log.Println("User joined channel", a.Message)
-
-				// Prevent duplicate users
-				add := true
-				for _, client := range clients[a.Message] {
-					if client == user {
-						add = false
-					}
-				}
-
-				if add {
-					clients[a.Message] = append(clients[a.Message], user)
-				}
-			} else if a.Name == "SEND" {
-				log.Printf("Sending message '%s' to channel '%s'", a.Message, a.Channel)
-				user.Messages <- a.Message
-			} else if a.Name == "NICK" {
-				log.Printf("Changing nick to '%v'", a.Message)
-				user.SetNick(a.Message)
-			}
-		}*/
 }
 
 type action struct {
