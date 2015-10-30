@@ -93,7 +93,7 @@ func main() {
 
 	k := kite.New("vision", "1.0.0")
 
-	url := "http://" + os.Getenv("POOL_PORT_3001_TCP_ADDR") + ":3001/kite"
+	url := "http://" + os.Getenv("ZOMBIES_PORT_3001_TCP_ADDR") + ":3001/kite"
 	log.Println("Got URL", url)
 
 	pool = k.NewClient(url)
