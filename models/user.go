@@ -8,10 +8,10 @@ import (
 
 // User is someone with an account on Big Room
 type User struct {
-	ID       int64  `db:"id"`
-	Username string `db:"username"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
+	ID       int64  `db:"id" json:"id"`
+	Username string `db:"username" json:"username"`
+	Password string `db:"password" json:"-"`
+	Email    string `db:"email" json:"email"`
 }
 
 // NewUser registers a new user
