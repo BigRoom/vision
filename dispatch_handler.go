@@ -25,7 +25,6 @@ func messageLoop() {
 			if err != nil {
 				sentry.CaptureErrorAndWait(err, nil)
 				fmt.Println("error sending message:", err)
-				break
 			}
 		}
 	}
