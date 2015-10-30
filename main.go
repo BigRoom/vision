@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/bigroom/vision/models"
 	"github.com/bigroom/vision/tunnel"
+	"github.com/getsentry/raven-go"
 	"github.com/gorilla/mux"
 	"github.com/koding/kite"
 	"github.com/paked/configure"
@@ -32,7 +34,11 @@ var (
 	httpPort = conf.String("http-port", "6060", "Which port you want http to bind on")
 	rpcPort  = conf.String("rpc-port", "8080", "Which port you want rpc to bind on")
 
+	sentryDSN = conf.String("sentry-dsn", "", "The sentry DSN you want to use")
+
 	crypto = conf.String("crypto", "/crypto/app.rsa", "Your crypto")
+
+	sentry *raven.Client
 
 	pool *kite.Client
 )
@@ -42,6 +48,12 @@ func main() {
 	conf.Use(configure.NewFlag())
 
 	conf.Parse()
+
+	var err error
+	sentry, err = raven.NewClient(*sentryDSN, nil)
+	if err != nil {
+		log.Println("No sentry:", err)
+	}
 
 	restrict.ReadCryptoKey(*crypto)
 
