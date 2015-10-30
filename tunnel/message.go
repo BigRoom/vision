@@ -30,7 +30,6 @@ type Message struct {
 }
 
 func (m *Message) Dispatch(args *MessageArgs, reply *MessageReply) error {
-	//fmt.Println(args)
 	reply.OK = true
 
 	m.messages <- *args

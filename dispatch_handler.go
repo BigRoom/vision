@@ -102,6 +102,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			})
 		} else if a.Name == "SEND" {
 			log.Printf("Sending message '%v' to channel '%v'", a.Message, a.Channel)
+
 			_, err := pool.Tell("send", zombies.Send{
 				ID:      u.ID,
 				Channel: a.Channel,

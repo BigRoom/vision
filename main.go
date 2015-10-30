@@ -27,6 +27,11 @@ var (
 
 	defaultIRCServer = conf.String("default-irc", "chat.freenode.net", "default IRC host")
 
+	httpAddr = conf.String("http-address", "0.0.0.0", "Which address you want http to bind on")
+	rpcAddr  = conf.String("rpc-address", "0.0.0.0", "Which address you want rpc to bind on")
+	httpPort = conf.String("http-port", "6060", "Which port you want http to bind on")
+	rpcPort  = conf.String("rpc-port", "8080", "Which port you want rpc to bind on")
+
 	crypto = conf.String("crypto", "/crypto/app.rsa", "Your crypto")
 
 	pool *kite.Client
@@ -48,15 +53,10 @@ func main() {
 		*dbName,
 	)
 
-	var (
-		host = "0.0.0.0"
-		port = "8080"
-	)
-
 	messages = make(chan tunnel.MessageArgs)
 	clients = make(map[string][]*conn)
 
-	go tunnel.NewRPCServer(messages, host, port)
+	go tunnel.NewRPCServer(messages, *rpcAddr, *rpcPort)
 	go messageLoop()
 
 	r := mux.NewRouter().
@@ -97,7 +97,7 @@ func main() {
 		log.Println("Connected!")
 	}()
 
-	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+	log.Println(http.ListenAndServe(*httpAddr+":"+*httpPort, nil))
 }
 
 type server struct {
