@@ -54,6 +54,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	ts, err := restrict.Token(claims)
 	if err != nil {
 		coms.Fail("Failure signing the token")
+		sentry.CaptureError(err, nil)
 		return
 	}
 

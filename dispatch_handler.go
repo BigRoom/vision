@@ -23,7 +23,9 @@ func messageLoop() {
 			})
 
 			if err != nil {
+				sentry.CaptureErrorAndWait(err, nil)
 				fmt.Println("error sending message:", err)
+				break
 			}
 		}
 	}
@@ -37,13 +39,13 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 	log.Println("Dispatching")
 	u, err := models.FetchUser("id", t.Claims["id"])
 	if err != nil {
-		log.Println("COuldnt get user")
+		log.Println("Couldnt get user")
 		return
 	}
 
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("couldn't upgrade:", err)
+		sentry.CaptureErrorAndWait(err, nil)
 		return
 	}
 
@@ -57,6 +59,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 	resp, err := pool.Tell("exists", u.ID)
 	if err != nil {
 		log.Fatal("error getting exists:", err)
+		sentry.CaptureErrorAndWait(err, nil)
 		return
 	}
 
@@ -71,6 +74,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		_, err := pool.Tell("add", add)
 		if err != nil {
 			log.Fatal("error creating:", err)
+			sentry.CaptureErrorAndWait(err, nil)
 			return
 		}
 	}
@@ -93,6 +97,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 			if err != nil {
 				log.Println("Closing connection. Error joining chanel:", err)
+				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}
 
@@ -111,6 +116,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 			if err != nil {
 				log.Println("Closing connection. Error sending message:", err)
+				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}
 		} else if a.Name == "CHANNELS" {
@@ -119,6 +125,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			resp, err := pool.Tell("channels", u.ID)
 			if err != nil {
 				log.Println("Closing connection. Could not connect to kite: ", err)
+				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}
 
@@ -132,6 +139,8 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 			if err != nil {
 				log.Println("Coudlnt wirte JSON")
+				sentry.CaptureErrorAndWait(err, nil)
+				return
 			}
 		}
 	}
