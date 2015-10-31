@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/paked/gerrycode/communicator"
 	"github.com/paked/restrict"
+	log "github.com/sirupsen/logrus"
 )
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,11 +18,18 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	email := r.FormValue("email")
-	fmt.Println(username, password, email)
+
+	log.WithFields(log.Fields{
+		"username": username,
+		"email":    email,
+	}).Info("User is tryingt to register")
 
 	u, err := models.NewUser(username, password, email)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Unable to connect to user")
+
 		coms.Error("Unable to create user")
 		return
 	}

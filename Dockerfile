@@ -22,6 +22,7 @@ RUN go get golang.org/x/crypto/bcrypt
 RUN go get github.com/koding/kite
 
 RUN go get github.com/getsentry/raven-go
+RUN go get github.com/sirupsen/logrus
 
 # ADD . /go/src/github.com/bigroom/vision
 # ADD ./models/ /go/src/github.com/bigroom/vision/models

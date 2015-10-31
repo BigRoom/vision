@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,7 +44,6 @@ func NewUser(username, password, email string) (User, error) {
 	}
 
 	if u.Username != username {
-		fmt.Println(u)
 		return u, errors.New("User did not sync with database")
 	}
 

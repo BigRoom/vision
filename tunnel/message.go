@@ -33,7 +33,5 @@ func (m *Message) Dispatch(args *MessageArgs, reply *MessageReply) error {
 	reply.OK = true
 
 	m.messages <- *args
-	fmt.Println("Dispatched.")
-
 	return nil
 }

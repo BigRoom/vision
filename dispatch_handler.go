@@ -1,21 +1,26 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/bigroom/vision/models"
 	"github.com/bigroom/zombies"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 func messageLoop() {
 	for {
-		log.Println("Waiting for message...")
+		log.Info("Waiting for message...")
+
 		m := <-messages
-		log.Printf("Dispatching message '%v' to channel with key: '%v'", m.Content, m.Key())
+
+		log.WithFields(log.Fields{
+			"message":     m.Content,
+			"channel_key": m.Key(),
+		}).Info("Dispatching message to user")
+
 		for _, client := range clients[m.Key()] {
 			err := client.c.WriteJSON(response{
 				Name:     "MESSAGE",
@@ -24,7 +29,10 @@ func messageLoop() {
 
 			if err != nil {
 				sentry.CaptureErrorAndWait(err, nil)
-				fmt.Println("error sending message:", err)
+
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Info("Couldnt send error")
 			}
 		}
 	}
@@ -35,10 +43,11 @@ var upgrader = websocket.Upgrader{
 }
 
 func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
-	log.Println("Dispatching")
 	u, err := models.FetchUser("id", t.Claims["id"])
 	if err != nil {
-		log.Println("Couldnt get user")
+		log.WithFields(log.Fields{
+			"id": t.Claims["id"],
+		}).Info("Could not get user with ID")
 		return
 	}
 
@@ -57,13 +66,12 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 	resp, err := pool.Tell("exists", u.ID)
 	if err != nil {
-		log.Fatal("error getting exists:", err)
 		sentry.CaptureErrorAndWait(err, nil)
 		return
 	}
 
 	if !resp.MustBool() {
-		log.Println("Creating zombie")
+		log.Info("Creating zombie")
 		add := zombies.Add{
 			ID:     u.ID,
 			Nick:   u.Username,
@@ -72,7 +80,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 		_, err := pool.Tell("add", add)
 		if err != nil {
-			log.Fatal("error creating:", err)
+			log.Error("error creating:", err)
 			sentry.CaptureErrorAndWait(err, nil)
 			return
 		}
@@ -82,12 +90,14 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		var a action
 		err := c.ReadJSON(&a)
 		if err != nil {
-			log.Println("Closing connection. Error reading:", err)
+			log.Warn("Closing connection. Error reading:", err)
 			return
 		}
 
 		if a.Name == "SET" {
-			log.Println("Adding user to chanel", a.Message)
+			log.WithFields(log.Fields{
+				"channel_key": a.Message,
+			}).Info("Adding user to chanel")
 
 			_, err := pool.Tell("join", zombies.Join{
 				ID:      u.ID,
@@ -95,7 +105,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			})
 
 			if err != nil {
-				log.Println("Closing connection. Error joining chanel:", err)
+				log.Warn("Closing connection. Error joining chanel:", err)
 				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}
@@ -105,7 +115,10 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 				id: u.ID,
 			})
 		} else if a.Name == "SEND" {
-			log.Printf("Sending message '%v' to channel '%v'", a.Message, a.Channel)
+			log.WithFields(log.Fields{
+				"message":     a.Message,
+				"channel_key": a.Channel,
+			}).Info("Going to send message to IRC")
 
 			_, err := pool.Tell("send", zombies.Send{
 				ID:      u.ID,
@@ -114,16 +127,21 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			})
 
 			if err != nil {
-				log.Println("Closing connection. Error sending message:", err)
+				log.Info("Closing connection. Error sending message:", err)
 				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}
+
+			log.WithFields(log.Fields{
+				"channel_key": a.Channel,
+				"message":     a.Message,
+			}).Info("Sent message")
 		} else if a.Name == "CHANNELS" {
-			log.Println("Sending channels to user")
+			log.Info("Sending channels to user")
 
 			resp, err := pool.Tell("channels", u.ID)
 			if err != nil {
-				log.Println("Closing connection. Could not connect to kite: ", err)
+				log.Warn("Closing connection. Could not connect to kite: ", err)
 				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}
@@ -137,7 +155,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			})
 
 			if err != nil {
-				log.Println("Coudlnt wirte JSON")
+				log.Error("Coudln't write JSON")
 				sentry.CaptureErrorAndWait(err, nil)
 				return
 			}

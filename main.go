@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/koding/kite"
 	"github.com/paked/configure"
 	"github.com/paked/restrict"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -100,7 +100,7 @@ func main() {
 	go func() {
 		connected, err := pool.DialForever()
 		if err != nil {
-			log.Fatal(err)
+			log.Warn("Got error connecting to zombies", err)
 		}
 
 		<-connected
