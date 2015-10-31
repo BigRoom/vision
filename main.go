@@ -6,6 +6,7 @@ import (
 
 	"github.com/bigroom/vision/models"
 	"github.com/bigroom/vision/tunnel"
+	"github.com/facebookgo/grace/gracehttp"
 	"github.com/getsentry/raven-go"
 	"github.com/gorilla/mux"
 	"github.com/koding/kite"
@@ -108,7 +109,12 @@ func main() {
 		log.Println("Connected!")
 	}()
 
-	log.Println(http.ListenAndServe(*httpAddr+":"+*httpPort, nil))
+	log.Println(gracehttp.Serve(
+		&http.Server{
+			Addr:    *httpAddr + ":" + *httpPort,
+			Handler: http.DefaultServeMux,
+		},
+	))
 }
 
 type server struct {

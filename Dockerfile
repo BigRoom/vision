@@ -23,6 +23,7 @@ RUN go get github.com/koding/kite
 
 RUN go get github.com/getsentry/raven-go
 RUN go get github.com/sirupsen/logrus
+RUN go get github.com/facebookgo/grace/gracehttp
 
 # ADD . /go/src/github.com/bigroom/vision
 # ADD ./models/ /go/src/github.com/bigroom/vision/models
