@@ -28,7 +28,7 @@ func messageLoop() {
 			})
 
 			if err != nil {
-				sentry.CaptureErrorAndWait(err, nil)
+				sentry.CaptureError(err, nil)
 
 				log.WithFields(log.Fields{
 					"error": err,
@@ -53,7 +53,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		sentry.CaptureErrorAndWait(err, nil)
+		sentry.CaptureError(err, nil)
 		return
 	}
 
@@ -66,7 +66,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 	resp, err := pool.Tell("exists", u.ID)
 	if err != nil {
-		sentry.CaptureErrorAndWait(err, nil)
+		sentry.CaptureError(err, nil)
 		return
 	}
 
@@ -81,7 +81,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		_, err := pool.Tell("add", add)
 		if err != nil {
 			log.Error("error creating:", err)
-			sentry.CaptureErrorAndWait(err, nil)
+			sentry.CaptureError(err, nil)
 			return
 		}
 	}
@@ -106,7 +106,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 			if err != nil {
 				log.Warn("Closing connection. Error joining chanel:", err)
-				sentry.CaptureErrorAndWait(err, nil)
+				sentry.CaptureError(err, nil)
 				return
 			}
 
@@ -128,7 +128,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 			if err != nil {
 				log.Info("Closing connection. Error sending message:", err)
-				sentry.CaptureErrorAndWait(err, nil)
+				sentry.CaptureError(err, nil)
 				return
 			}
 
@@ -142,7 +142,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 			resp, err := pool.Tell("channels", u.ID)
 			if err != nil {
 				log.Warn("Closing connection. Could not connect to kite: ", err)
-				sentry.CaptureErrorAndWait(err, nil)
+				sentry.CaptureError(err, nil)
 				return
 			}
 
@@ -156,7 +156,7 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 			if err != nil {
 				log.Error("Coudln't write JSON")
-				sentry.CaptureErrorAndWait(err, nil)
+				sentry.CaptureError(err, nil)
 				return
 			}
 		}
