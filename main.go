@@ -100,6 +100,9 @@ func setupRouting() *mux.Router {
 	r.HandleFunc("/users/me", restrict.R(secretHandler)).
 		Methods("GET")
 
+	r.HandleFunc("/servers/{host}/{channel}/scrollback", restrict.R(messagesHandler)).
+		Methods("GET")
+
 	r.HandleFunc("/servers/default", defaultServerHandler).
 		Methods("GET")
 
