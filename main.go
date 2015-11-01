@@ -43,12 +43,17 @@ var (
 	pool *kite.Client
 )
 
-func main() {
+func init() {
 	conf.Use(configure.NewEnvironment())
 	conf.Use(configure.NewFlag())
 
 	conf.Parse()
 
+	messages = make(chan tunnel.MessageArgs)
+	clients = make(map[string][]*conn)
+}
+
+func main() {
 	var err error
 	sentry, err = raven.NewClient(*sentryDSN, nil)
 	if err != nil {
@@ -65,12 +70,22 @@ func main() {
 		*dbName,
 	)
 
-	messages = make(chan tunnel.MessageArgs)
-	clients = make(map[string][]*conn)
-
 	go tunnel.NewRPCServer(messages, *rpcAddr, *rpcPort)
 	go messageLoop()
 
+	r := setupRouting()
+
+	pool = setupZombies()
+
+	log.Println(gracehttp.Serve(
+		&http.Server{
+			Addr:    *httpAddr + ":" + *httpPort,
+			Handler: r,
+		},
+	))
+}
+
+func setupRouting() *mux.Router {
 	r := mux.NewRouter().
 		PathPrefix("/api").
 		Subrouter().
@@ -90,12 +105,15 @@ func main() {
 
 	r.HandleFunc("/ws", restrict.R(dispatchHandler))
 
+	return r
+}
+
+func setupZombies() *kite.Client {
 	k := kite.New("vision", "1.0.0")
 
 	url := "http://" + os.Getenv("ZOMBIES_PORT_3001_TCP_ADDR") + ":3001/kite"
-	log.Println("Got URL", url)
 
-	pool = k.NewClient(url)
+	pool := k.NewClient(url)
 	go func() {
 		connected, err := pool.DialForever()
 		if err != nil {
@@ -107,10 +125,5 @@ func main() {
 		log.Println("Connected!")
 	}()
 
-	log.Println(gracehttp.Serve(
-		&http.Server{
-			Addr:    *httpAddr + ":" + *httpPort,
-			Handler: r,
-		},
-	))
+	return pool
 }
