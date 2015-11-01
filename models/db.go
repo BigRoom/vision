@@ -54,4 +54,12 @@ CREATE TABLE IF NOT EXISTS users (
 	password text NOT NULL,
 	email text NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS messages (
+	id serial PRIMARY KEY,
+	message text NOT NULL,
+	username text NOT NULL,
+	channel_key text NOT NULL,
+	time bigserial NOT NULL
+);
 `
