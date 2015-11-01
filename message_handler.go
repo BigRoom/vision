@@ -19,14 +19,14 @@ func messagesHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 
 	channelKey := host + "/#" + channel
 
-	offsetString := r.FormValue("offset")
-	offset, err := strconv.ParseInt(offsetString, 10, 64)
+	pageString := r.FormValue("page")
+	page, err := strconv.ParseInt(pageString, 10, 64)
 	if err != nil {
-		coms.Fail("Could not parse offset as a number")
+		coms.Fail("Could not parse page as a number")
 		return
 	}
 
-	msgs, err := models.Messages(channelKey, offset)
+	msgs, err := models.Messages(channelKey, page)
 	if err != nil {
 		coms.Fail("Could not fetch messages")
 		return

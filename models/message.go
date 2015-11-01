@@ -32,7 +32,7 @@ func NewMessage(content, user, key string) (Message, error) {
 	return m, nil
 }
 
-func Messages(key string, offset int64) ([]Message, error) {
+func Messages(key string, page int64) ([]Message, error) {
 	var ms []Message
 
 	err := DB.
@@ -41,7 +41,7 @@ func Messages(key string, offset int64) ([]Message, error) {
 		Where("channel_key = $1", key).
 		OrderBy("time DESC").
 		Limit(uint64(MessagePageSize)).
-		Offset(uint64(offset)).
+		Offset(uint64(page * MessagePageSize)).
 		QueryStructs(&ms)
 
 	if err != nil {
