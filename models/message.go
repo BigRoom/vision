@@ -8,11 +8,11 @@ const (
 )
 
 type Message struct {
-	ID      int64  `db:"id"`
-	Content string `db:"message"`
-	User    string `db:"username"`
-	Key     string `db:"channel_key"`
-	Time    int64  `db:"time"`
+	ID      int64  `db:"id" json:"id"`
+	Content string `db:"message" json:"content"`
+	User    string `db:"username" json:"user"`
+	Key     string `db:"channel_key" json:"channel_key"`
+	Time    int64  `db:"time" json:"time"`
 }
 
 func NewMessage(content, user, key string) (Message, error) {
