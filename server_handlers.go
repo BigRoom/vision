@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/paked/gerrycode/communicator"
+	"github.com/bigroom/communicator"
 )
 
 func defaultServerHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,5 +15,6 @@ func defaultServerHandler(w http.ResponseWriter, r *http.Request) {
 		Server: *defaultIRCServer,
 	}
 
-	coms.OKWithData("server", resp)
+	coms.With(resp).
+		OK("Here is your thing!")
 }
