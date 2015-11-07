@@ -16,5 +16,5 @@ func defaultServerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	coms.With(resp).
-		OK("Here is your thing!")
+		OK()
 }
