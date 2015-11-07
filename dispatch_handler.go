@@ -95,72 +95,89 @@ func dispatchHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		}
 
 		if a.Name == "SET" {
-			log.WithFields(log.Fields{
-				"channel_key": a.Message,
-			}).Info("Adding user to chanel")
-
-			_, err := pool.Tell("join", zombies.Join{
-				ID:      u.ID,
-				Channel: a.Message,
-			})
-
-			if err != nil {
-				log.Warn("Closing connection. Error joining chanel:", err)
-				sentry.CaptureError(err, nil)
-				return
-			}
-
-			clients[a.Message] = append(clients[a.Message], &conn{
-				c:  c,
-				id: u.ID,
-			})
+			err = handleJoin(a, u, c)
 		} else if a.Name == "SEND" {
-			log.WithFields(log.Fields{
-				"message":     a.Message,
-				"channel_key": a.Channel,
-			}).Info("Going to send message to IRC")
-
-			_, err := pool.Tell("send", zombies.Send{
-				ID:      u.ID,
-				Channel: a.Channel,
-				Message: a.Message,
-			})
-
-			if err != nil {
-				log.Info("Closing connection. Error sending message:", err)
-				sentry.CaptureError(err, nil)
-				return
-			}
-
-			log.WithFields(log.Fields{
-				"channel_key": a.Channel,
-				"message":     a.Message,
-			}).Info("Sent message")
+			err = handleSend(a, u, c)
 		} else if a.Name == "CHANNELS" {
-			log.Info("Sending channels to user")
+			err = handleChannels(a, u, c)
+		}
 
-			resp, err := pool.Tell("channels", u.ID)
-			if err != nil {
-				log.Warn("Closing connection. Could not connect to kite: ", err)
-				sentry.CaptureError(err, nil)
-				return
-			}
-
-			var channels zombies.Channels
-			resp.MustUnmarshal(&channels)
-
-			err = c.WriteJSON(response{
-				Contents: channels.Channels,
-				Name:     "CHANNELS",
-			})
-
-			if err != nil {
-				log.Error("Coudln't write JSON")
-				sentry.CaptureError(err, nil)
-				return
-			}
+		if err != nil {
+			sentry.CaptureError(err, nil)
 		}
 	}
+}
+
+func handleJoin(a action, u models.User, c *websocket.Conn) error {
+	log.WithFields(log.Fields{
+		"channel_key": a.Message,
+	}).Info("Adding user to chanel")
+
+	_, err := pool.Tell("join", zombies.Join{
+		ID:      u.ID,
+		Channel: a.Message,
+	})
+
+	if err != nil {
+		log.Warn("Closing connection. Error joining chanel:", err)
+		return err
+	}
+
+	clients[a.Message] = append(clients[a.Message], &conn{
+		c:  c,
+		id: u.ID,
+	})
+
+	return nil
+}
+
+func handleSend(a action, u models.User, c *websocket.Conn) error {
+	log.WithFields(log.Fields{
+		"message":     a.Message,
+		"channel_key": a.Channel,
+	}).Info("Going to send message to IRC")
+
+	_, err := pool.Tell("send", zombies.Send{
+		ID:      u.ID,
+		Channel: a.Channel,
+		Message: a.Message,
+	})
+
+	if err != nil {
+		log.Info("Closing connection. Error sending message:", err)
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"channel_key": a.Channel,
+		"message":     a.Message,
+	}).Info("Sent message")
+
+	return nil
+}
+
+func handleChannels(a action, u models.User, c *websocket.Conn) error {
+	log.Info("Sending channels to user")
+	resp, err := pool.Tell("channels", u.ID)
+	if err != nil {
+		log.Warn("Closing connection. Could not connect to kite: ", err)
+		return err
+	}
+
+	var channels zombies.Channels
+	resp.MustUnmarshal(&channels)
+
+	err = c.WriteJSON(response{
+		Contents: channels.Channels,
+		Name:     "CHANNELS",
+	})
+
+	if err != nil {
+		log.Warn("Could not write JSON", err)
+		return err
+	}
+
+	return nil
 }
 
 type action struct {
