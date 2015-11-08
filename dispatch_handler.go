@@ -167,6 +167,15 @@ func handleChannels(a action, u models.User, c *websocket.Conn) error {
 	var channels zombies.Channels
 	resp.MustUnmarshal(&channels)
 
+	for _, channel := range channels.Channels {
+		key := a.Message + "/" + channel
+		log.Info("Joining channel", key)
+		clients[key] = append(clients[key], &conn{
+			c:  c,
+			id: u.ID,
+		})
+	}
+
 	err = c.WriteJSON(response{
 		Contents: channels.Channels,
 		Name:     "CHANNELS",
