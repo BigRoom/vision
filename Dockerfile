@@ -25,6 +25,8 @@ RUN go get github.com/getsentry/raven-go
 RUN go get github.com/sirupsen/logrus
 RUN go get github.com/facebookgo/grace/gracehttp
 
+RUN go get github.com/bigroom/communicator
+
 # ADD . /go/src/github.com/bigroom/vision
 # ADD ./models/ /go/src/github.com/bigroom/vision/models
 # ADD ./tunnel/ /go/src/github.com/bigroom/vision/tunnel
