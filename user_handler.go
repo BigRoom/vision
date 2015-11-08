@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/bigroom/communicator"
 	"github.com/bigroom/vision/models"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/paked/gerrycode/communicator"
 	"github.com/paked/restrict"
 	log "github.com/sirupsen/logrus"
 )
@@ -34,7 +33,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coms.OKWithData("user", u)
+	coms.With(u).OK("user")
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +49,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.Login(password); err != nil {
-		coms.Error("Unable to login " + fmt.Sprintf("%v", err))
+		coms.Errorf("Unable to login %v", err)
 		return
 	}
 
@@ -65,7 +64,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coms.OKWithData("token", ts)
+	coms.With(ts).OK()
 }
 
 func secretHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
@@ -77,5 +76,5 @@ func secretHandler(w http.ResponseWriter, r *http.Request, t *jwt.Token) {
 		return
 	}
 
-	coms.OKWithData("ID", u)
+	coms.With(u).OK()
 }
