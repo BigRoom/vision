@@ -24,7 +24,7 @@ func messageLoop() {
 		for _, client := range clients[m.Key()] {
 			err := client.c.WriteJSON(response{
 				Name:     "MESSAGE",
-				Contents: m,
+				Contents: m.Message(),
 			})
 
 			if err != nil {
